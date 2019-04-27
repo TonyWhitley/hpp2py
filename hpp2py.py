@@ -107,8 +107,9 @@ def translateStructClose(CPPstring):
 
 
 if __name__ == '__main__':
+  hppFile = 'InternalsPlugin.hpp'
   python = []
-  with open('InternalsPlugin.hpp', "r") as cpp:
+  with open(hppFile, "r") as cpp:
     src = cpp.readlines()
     for line in src:
       line = line.strip()
@@ -126,7 +127,7 @@ if __name__ == '__main__':
   with open('InternalsPlugin.py', "w") as p:
     p.writelines(""" \
 # Python mapping of The Iron Wolf's rF2 Shared Memory Tools
-# Auto-generated.
+# Auto-generated from %s
 
 import mmap
 import ctypes
@@ -135,7 +136,7 @@ import time
 MAX_MAPPED_VEHICLES = 128
 MAX_MAPPED_IDS = 512
 
-class rF2Vec3(ctypes.Structure):
+class TelemVect3(ctypes.Structure):
     _pack_ = 4
     _fields_ = [
         ('x', ctypes.c_double),
@@ -143,7 +144,7 @@ class rF2Vec3(ctypes.Structure):
         ('z', ctypes.c_double),
     ]
 
-"""      )
+""" % hppFile)
     p.writelines(python)
     p.writelines("""
 class SimInfo:
