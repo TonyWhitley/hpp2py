@@ -12,9 +12,12 @@ def step_impl(context):
 
 @then(u'I see line "{string}"')
 def step_impl(context, string):
-  _result = r'\n'.join(context.python.split('\n'))
+  try:
+    _result = r'\n'.join(context.python.split('\n'))
+  except:
+    _result = None
   assert _result == string, \
-    "Got %s" % context.python
+    "Got '%s'" % context.python
 
 
 @when(u'the struct is translated')

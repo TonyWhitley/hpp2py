@@ -26,6 +26,35 @@ def translateComment(CPPstring):
     result = CPPstring
   return result
 
+def translateCSpublic(CPPstring):
+  commentPattern = re.compile('(.*?)public (.*)')
+  match = commentPattern.match(CPPstring)
+  if match:
+    result = '%s%s' % (match.group(1), match.group(2))
+    print(result)
+  else:
+    result = CPPstring
+  return result
+
+def translateCSjsonIgnore(CPPstring):
+  commentPattern = re.compile('(.*)\[JsonIgnore\] (.*)')
+  match = commentPattern.match(CPPstring)
+  if match:
+    result = '%s%s' % (match.group(1), match.group(2))
+  else:
+    result = CPPstring
+  return result
+
+def translateCSMarshalAsAttribute(CPPstring):
+  commentPattern = re.compile('.*\[MarshalAsAttribute\(UnmanagedType.ByValArray, *SizeConst *= *(.*)\)\]')
+  match = commentPattern.match(CPPstring)
+  if match:
+    result = '%s' % (match.group(1))
+    print(result)
+  else:
+    result = CPPstring
+  return result
+
 def translateStruct(CPPstring):
   global indenting
   commentPattern = re.compile('struct *(.*)')
@@ -37,7 +66,7 @@ def translateStruct(CPPstring):
     result = CPPstring
   return result
 
-def translateStructItem(CPPstring):
+def translateStructItem(CPPstring, arraySize=0):
   dict = {
     'long': 'ctypes.c_int',
     'double': 'ctypes.c_double',
@@ -58,25 +87,67 @@ def translateStructItem(CPPstring):
     'TrackRulesColumnV01': 'TrackRulesColumnV01',
     'TrackRulesStageV01': 'TrackRulesStageV01',
     'TrackRulesActionV01': 'TrackRulesActionV01',
-    'TrackRulesParticipantV01': 'TrackRulesParticipantV01'
+    'TrackRulesParticipantV01': 'TrackRulesParticipantV01',
+    # CS
+    'rF2Vec3': 'rF2Vec3',
+    'rF2Wheel': 'rF2Wheel',
+    'rF2VehicleTelemetry': 'rF2VehicleTelemetry',
+    'rF2VehicleScoring': 'rF2VehicleScoring',
+    'rF2VehicleScoringInfo': 'rF2VehicleScoringInfo',
+    'rF2TrackRules': 'rF2TrackRules',
+    'rF2TrackRulesAction': 'rF2TrackRulesAction',
+    'rF2TrackRulesParticipant': 'rF2TrackRulesParticipant',
+    'rF2VehScoringCapture': 'rF2VehScoringCapture',
+    'rF2VehScoringInfo': 'rF2VehScoringInfo',
+    'VehicleScoringInfoV01': 'VehicleScoringInfoV01',
+    'rF2TrackedDamage': 'rF2TrackedDamage',
+    'rF2PhysicsOptions': 'rF2PhysicsOptions',
+    'rF2SessionTransitionCapture': 'rF2SessionTransitionCapture',
+    'rF2TrackRulesCommand': 'rF2TrackRulesCommand',
+    'rF2TrackRulesColumn': 'rF2TrackRulesColumn',
+    'int': 'ctypes.c_int',
+    'uint': 'ctypes.c_int',
+    'byte': 'ctypes.c_ubyte',
+    'sbyte': 'ctypes.c_ubyte',
+    'Int64': 'ctypes.c_double',
+    'ushort': 'ctypes.c_short',
   }
 
-  arrayPattern = re.compile(' *(.*) +(.*) *\[ *(.*) *\] *;(.*)')
+  commentPattern = re.compile('(.*?)( *#.*)')
+  match = commentPattern.match(CPPstring)
+  if match:
+    comment = match.group(2)
+    CPPstring = match.group(1)
+  else:
+    comment = ''
+  arrayPattern = re.compile(' *(.*) +(.*) *\[ *(.*) *\] *?;(.*)')
+  CSarrayPattern = re.compile(' *(.*) *\[ *\] +(.*) *?;(.*)')
   match = arrayPattern.match(CPPstring)
+  CSmatch = CSarrayPattern.match(CPPstring)
   if match:
     try:
       pythonType = dict[match.group(1).strip()]
-      result = "        ('%s', %s*%s),%s" % (match.group(2), pythonType, match.group(3),match.group(4))
+      result = "        ('%s', %s*%s),%s%s" % \
+        (match.group(2), pythonType, match.group(3),match.group(4), comment)
     except KeyError:
-      print('bad C type "%s" in "%s"' % (match.group(1), CPPstring))
+      print('bad C array type "%s" in "%s"' % (match.group(1), CPPstring))
+      result = CPPstring
+  elif CSmatch:
+    try:
+      pythonType = dict[CSmatch.group(1).strip()]
+      result = "        ('%s', %s*%s),%s%s" % \
+        (CSmatch.group(2), pythonType, arraySize, CSmatch.group(3),comment)
+    except KeyError:
+      print('bad CS array type "%s" in "%s"' % (CSmatch.group(1), CPPstring))
       result = CPPstring
   else:
-    commentPattern = re.compile(' *(.*) +(.*) *;(.*)')
+    commentPattern = re.compile(' *(.*) +(.*) *?;(.*)')
     match = commentPattern.match(CPPstring)
     if match:
       try:
         pythonType = dict[match.group(1).strip()]
-        result = indentSpaces+"('%s', %s),%s" % (match.group(2), pythonType, match.group(3))
+        result = indentSpaces+"('%s', %s),%s%s" \
+          % (match.group(2), pythonType, match.group(3), comment)
       except KeyError:
         print('bad C type "%s" in "%s"' % (match.group(1), CPPstring))
         result = CPPstring
@@ -96,7 +167,7 @@ def translateStructOpen(CPPstring):
 
 def translateStructClose(CPPstring):
   global indenting
-  commentPattern = re.compile(' *};')
+  commentPattern = re.compile(' *}')
   match = commentPattern.match(CPPstring)
   if match:
     result = '    ]'
@@ -105,36 +176,96 @@ def translateStructClose(CPPstring):
     result = CPPstring
   return result
 
+def translateEnum(CPPstring):
+  global indenting
+  print(CPPstring)
+  commentPattern = re.compile(' *enum *(.*)')
+  match = commentPattern.match(CPPstring)
+  if match:
+    result = 'class %s(Enum):' % (match.group(1))
+    indenting = True
+  else:
+    result = CPPstring
+  return result
+
+def translateEnumOpen(CPPstring):
+  return translateStructOpen(CPPstring)
+
+
+def translateEnumItem(CPPstring):
+  commentPattern = re.compile('(.*?)( *#.*)')
+  match = commentPattern.match(CPPstring)
+  if match:
+    comment = match.group(2)
+    CPPstring = match.group(1)
+  else:
+    comment = ''
+
+  commentPattern = re.compile(' *([^\[]*) *= *([^,]*)')
+  match = commentPattern.match(CPPstring)
+  if match:
+    result = indentSpaces+"%s = %s%s" \
+      % (match.group(1).strip(), match.group(2), comment)
+  else:
+    result = CPPstring
+  return result
+
+
+def translateEnumClose(CPPstring):
+  return translateStructClose(CPPstring)
+
+def do1line(python, line, arraySize):
+  line = line.strip()
+  pythonLine = translateLineComment(line)
+  pythonLine = translateCSpublic(pythonLine)
+  pythonLine = translateCSjsonIgnore(pythonLine)
+  pythonLine = translateStruct(pythonLine)
+  pythonLine = translateStructOpen(pythonLine)
+  if pythonLine:
+    pythonLine = translateEnum(pythonLine)
+    #pythonLine = translateEnumOpen(pythonLine)
+    pythonLine = translateEnumItem(pythonLine)
+    #pythonLine = translateEnumClose(pythonLine)
+    if pythonLine:
+      pythonLine = translateStructItem(pythonLine, arraySize)
+      pythonLine = translateStructClose(pythonLine)
+      if pythonLine == line:
+        # for CS only
+        _marshall = translateCSMarshalAsAttribute(line)
+        if _marshall == line:
+          pythonLine = '#untranslated ' + pythonLine
+          python.append(pythonLine + '\n')
+        #else skip it
+      else:
+        pythonLine = translateComment(pythonLine)
+        python.append(pythonLine + '\n')
+
 
 if __name__ == '__main__':
   hppFile = 'InternalsPlugin.hpp'
+  hppFile = 'rF2data.cs'
   python = []
+  arraySize = ''
   with open(hppFile, "r") as cpp:
     src = cpp.readlines()
     for line in src:
-      line = line.strip()
-      pythonLine = translateLineComment(line)
-      pythonLine = translateStruct(pythonLine)
-      pythonLine = translateStructOpen(pythonLine)
-      if pythonLine:
-        pythonLine = translateStructItem(pythonLine)
-        pythonLine = translateStructClose(pythonLine)
-        if pythonLine == line:
-          pythonLine = '#untranslated ' + pythonLine
-        else:
-          pythonLine = translateComment(pythonLine)
-        python.append(pythonLine + '\n')
+      do1line(python, line, arraySize)
+      arraySize = translateCSMarshalAsAttribute(line)
+
   with open('InternalsPlugin.py', "w") as p:
-    p.writelines(""" \
+    p.writelines("""\
 # Python mapping of The Iron Wolf's rF2 Shared Memory Tools
 # Auto-generated from %s
 
-import mmap
+from enum import Enum
 import ctypes
-import time
+import mmap
 
 MAX_MAPPED_VEHICLES = 128
 MAX_MAPPED_IDS = 512
+MAX_RULES_INSTRUCTION_MSG_LEN = 96
+MAX_STATUS_MSG_LEN = 128
+
 
 class TelemVect3(ctypes.Structure):
     _pack_ = 4
@@ -175,6 +306,7 @@ if __name__ == '__main__':
       v += str(version[i])
     clutch = info.Rf2Tele.mVehicles[0].mUnfilteredClutch # 1.0 clutch down, 0 clutch up
     gear   = info.Rf2Tele.mVehicles[0].mGear  # -1 to 6
-    print('Map version: %s\nGear: %d, Clutch position: %d' % (v, gear, clutch))
+    print('Map version: %s\\n'
+          'Gear: %d, Clutch position: %d' % (v, gear, clutch))
 
 """)

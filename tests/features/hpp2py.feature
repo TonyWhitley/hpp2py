@@ -60,7 +60,7 @@ Feature: Translate .hpp file to Python
 
     Scenario: structItemCommented
         Given I have a line "  long mID;                      // slot ID (note that it can be re-used in multiplayer after someone"
-        When the structItem is fullyTranslated
+        When the structItem is fullytranslated
         Then I see line "        ('mID', ctypes.c_int),                      # slot ID (note that it can be re-used in multiplayer after someone"
 
     Scenario: structClose
