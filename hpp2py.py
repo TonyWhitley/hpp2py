@@ -103,8 +103,9 @@ def translateStructItem(CPPstring, arraySize=0):
     'rF2TrackedDamage': 'rF2TrackedDamage',
     'rF2PhysicsOptions': 'rF2PhysicsOptions',
     'rF2SessionTransitionCapture': 'rF2SessionTransitionCapture',
-    'rF2TrackRulesCommand': 'rF2TrackRulesCommand',
-    'rF2TrackRulesColumn': 'rF2TrackRulesColumn',
+    # enums
+    'rF2TrackRulesCommand': 'ctypes.c_int',
+    'rF2TrackRulesColumn': 'ctypes.c_int',
     'int': 'ctypes.c_int',
     'uint': 'ctypes.c_int',
     'byte': 'ctypes.c_ubyte',
@@ -242,8 +243,10 @@ def do1line(python, line, arraySize):
 
 
 if __name__ == '__main__':
-  hppFile = 'InternalsPlugin.hpp'
-  hppFile = 'rF2data.cs'
+  #hppFile = 'InternalsPlugin.hpp'
+  #pyFile =  'InternalsPlugin.py'
+  hppFile =  'rF2data.cs'
+  pyFile =   'rF2data.py'
   python = []
   arraySize = ''
   with open(hppFile, "r") as cpp:
@@ -252,7 +255,7 @@ if __name__ == '__main__':
       do1line(python, line, arraySize)
       arraySize = translateCSMarshalAsAttribute(line)
 
-  with open('InternalsPlugin.py', "w") as p:
+  with open(pyFile, "w") as p:
     p.writelines("""\
 # Python mapping of The Iron Wolf's rF2 Shared Memory Tools
 # Auto-generated from %s
@@ -261,19 +264,11 @@ from enum import Enum
 import ctypes
 import mmap
 
-MAX_MAPPED_VEHICLES = 128
-MAX_MAPPED_IDS = 512
-MAX_RULES_INSTRUCTION_MSG_LEN = 96
-MAX_STATUS_MSG_LEN = 128
-
-
-class TelemVect3(ctypes.Structure):
-    _pack_ = 4
-    _fields_ = [
-        ('x', ctypes.c_double),
-        ('y', ctypes.c_double),
-        ('z', ctypes.c_double),
-    ]
+class rFactor2Constants:
+  MAX_MAPPED_VEHICLES = 128
+  MAX_MAPPED_IDS = 512
+  MAX_RULES_INSTRUCTION_MSG_LEN = 96
+  MAX_STATUS_MSG_LEN = 128
 
 """ % hppFile)
     p.writelines(python)
@@ -290,9 +285,13 @@ class SimInfo:
         self.Rf2Ext = rF2Extended.from_buffer(self._rf2_ext)
 
     def close(self):
+      # This didn't help with the errors
+      try:
         self._rf2_tele.close()
         self._rf2_scor.close()
         self._rf2_ext.close()
+      except BufferError: # "cannot close exported pointers exist"
+        pass
 
     def __del__(self):
         self.close()
@@ -301,9 +300,7 @@ if __name__ == '__main__':
     # Example usage
     info = SimInfo()
     version = info.Rf2Ext.mVersion
-    v = ''
-    for i in range(8):
-      v += str(version[i])
+    v = bytes(version).partition(b'\0')[0].decode().rstrip()
     clutch = info.Rf2Tele.mVehicles[0].mUnfilteredClutch # 1.0 clutch down, 0 clutch up
     gear   = info.Rf2Tele.mVehicles[0].mGear  # -1 to 6
     print('Map version: %s\\n'

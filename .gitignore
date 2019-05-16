@@ -334,3 +334,5 @@ ASALocalRun/
 /rF2data.cs
 /InternalsPlugin_handedited.py
 /InternalsPlugin2.py
+/.vscode
+/hpp2py.code-workspace
