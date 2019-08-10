@@ -1,3 +1,8 @@
+"""
+Translate a C# file (specifically thecrewchief.org's rF2data.cs) to
+something close to Python (some hand-editing may be required).
+"""
+# pylint: disable=bad-indentation
 import re
 
 indenting = False
@@ -256,9 +261,12 @@ if __name__ == '__main__':
       arraySize = translateCSMarshalAsAttribute(line)
 
   with open(pyFile, "w") as p:
-    p.writelines("""\
-# Python mapping of The Iron Wolf's rF2 Shared Memory Tools
-# Auto-generated from %s
+    p.writelines('''\
+"""
+Python mapping of The Iron Wolf's rF2 Shared Memory Tools
+Auto-generated from %s
+"""
+# pylint: disable=C,R,W
 
 from enum import Enum
 import ctypes
@@ -270,7 +278,7 @@ class rFactor2Constants:
   MAX_RULES_INSTRUCTION_MSG_LEN = 96
   MAX_STATUS_MSG_LEN = 128
 
-""" % hppFile)
+''' % hppFile)
     p.writelines(python)
     p.writelines("""
 class SimInfo:
