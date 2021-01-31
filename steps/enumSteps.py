@@ -1,23 +1,24 @@
 import hpp2py
 
+
 @when(u'the enum is translated')
 def step_impl(context):
-  context.python = hpp2py.translateEnum(context.CPPstring)
+    context.python = hpp2py.translateEnum(context.CPPstring)
 
 
 @when(u'the enumOpen is translated')
 def step_impl(context):
-  context.python = hpp2py.translateEnumOpen(context.CPPstring)
+    context.python = hpp2py.translateEnumOpen(context.CPPstring)
 
 
 @when(u'the enumItem is translated')
 def step_impl(context):
-  context.python = hpp2py.translateEnumItem(context.CPPstring)
+    context.python = hpp2py.translateEnumItem(context.CPPstring)
 
 
 @when(u'the enumClose is translated')
 def step_impl(context):
-  context.python = hpp2py.translateEnumClose(context.CPPstring)
+    context.python = hpp2py.translateEnumClose(context.CPPstring)
 
 
 """
@@ -36,4 +37,3 @@ def step_impl(context, string):
 def step_impl(context):
   assert context.python == None
 """
-
